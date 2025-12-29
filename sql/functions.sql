@@ -20,25 +20,24 @@ BEGIN
     JOIN ProductElements pe ON p.id = pe.parts_id
     WHERE pe.product_id = @ProductId;
 
-    -- Zabezpieczenie przed NULL (gdyby produkt nie miał części lub robocizny)
+    -- Zabezpieczenie przed NULL
     SET @TotalCost = ISNULL(@LaborCost, 0) + ISNULL(@PartsCost, 0);
 
     RETURN @TotalCost;
 END;
 GO
 
--- 2. Funkcja: Obliczanie wartości zamówienia (Przychód z uwzględnieniem rabatu)
--- Potrzebne do analityki sprzedaży i raportów
+-- 2. Funkcja: Obliczanie wartości zamówienia (Przychód)
+-- Potrzebne do analityki sprzedaży. Zakładamy marżę 40% na koszt produkcji.
 CREATE OR ALTER FUNCTION fn_CalculateOrderValue (@OrderId INT)
 RETURNS FLOAT
 AS
 BEGIN
     DECLARE @TotalValue FLOAT;
 
-    -- Zakładamy marżę 40% na koszt produkcji (Cena = Koszt * 1.4)
-    -- Rabat w OrderDetails jest liczbą całkowitą (0-100), więc dzielimy przez 100.0
+    -- Sumujemy: (Koszt Produkcji * 1.4 marży) * Ilość * (1 - Rabat%)
     SELECT @TotalValue = SUM(
-        (dbo.fn_CalculateProductionCost(od.product_id) * 1.4 * od.quantity) * (1 - (od.discount / 100.0))
+        (dbo.fn_CalculateProductionCost(od.product_id) * 1.4 * od.quantity) * (1.0 - (od.discount / 100.0))
     )
     FROM OrderDetails od
     WHERE od.order_id = @OrderId;
@@ -48,7 +47,7 @@ END;
 GO
 
 -- 3. Funkcja: Całkowite wydatki klienta (LTV - Lifetime Value)
--- Pozwala wyłonić kluczowych klientów do raportów zarządczych
+-- Pozwala wyłonić kluczowych klientów (VIP)
 CREATE OR ALTER FUNCTION fn_GetCustomerTotalSpent (@CustomerId INT)
 RETURNS FLOAT
 AS
