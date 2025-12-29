@@ -1,3 +1,5 @@
+USE test_db;
+
 insert into PartsSupplier (id, supplier_name) values (1, 'Emard and Sons');
 insert into PartsSupplier (id, supplier_name) values (2, 'Fadel-Gottlieb');
 insert into PartsSupplier (id, supplier_name) values (3, 'O''Reilly, Kris and Herzog');
