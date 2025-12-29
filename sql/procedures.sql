@@ -1,7 +1,7 @@
 USE test_db;
 GO
 
--- 1. Sprawdzanie dostępności i kosztów (Dla Klienta/Sprzedawcy)
+-- 1. Procedura: Sprawdzanie dostępności towaru, kosztów produkcji i czasu oczekiwania
 CREATE OR ALTER PROCEDURE sp_CheckAvailabilityAndCost
     @ProductId INT,
     @Quantity INT
@@ -11,7 +11,7 @@ BEGIN
     SELECT
         p.name AS Produkt,
         dbo.fn_CalculateProductionCost(p.id) AS KosztProdukcji,
-        (dbo.fn_CalculateProductionCost(p.id) * 1.4) AS CenaDlaKlienta, -- Symulacja marży
+        (dbo.fn_CalculateProductionCost(p.id) * 1.4) AS CenaDlaKlienta,
         CASE
             WHEN p.current_stock >= @Quantity THEN 'Dostępny od ręki'
             ELSE 'Wymaga produkcji'
@@ -25,8 +25,7 @@ BEGIN
 END;
 GO
 
--- 2. Składanie zamówienia (Główna logika biznesowa - automatyczna produkcja)
--- Realizuje - zamawianie towaru, którego nie ma
+-- 2. Procedura: Składanie zamówienia z automatycznym zleceniem produkcji w przypadku braku towaru
 CREATE OR ALTER PROCEDURE sp_PlaceOrder
     @CustomerId INT,
     @ProductId INT,
@@ -47,25 +46,19 @@ BEGIN
         SELECT @CurrentStock = current_stock, @ProductionTime = production_time_hours
         FROM Products WHERE id = @ProductId;
 
-        -- Generowanie ID (bo brak IDENTITY w schemacie)
         SELECT @OrderId = ISNULL(MAX(id), 0) + 1 FROM Orders;
         INSERT INTO Orders (id, customer_id, order_date) VALUES (@OrderId, @CustomerId, GETDATE());
 
         IF @CurrentStock >= @Quantity
         BEGIN
-            -- Scenariusz A: Jest towar
             UPDATE Products SET current_stock = current_stock - @Quantity WHERE id = @ProductId;
-            PRINT 'Zrealizowano z magazynu.';
         END
         ELSE
         BEGIN
-            -- Scenariusz B: Brak towaru -> Zlecenie produkcji
             SET @MissingQuantity = @Quantity - @CurrentStock;
 
-            -- Zabieramy resztki z magazynu
             UPDATE Products SET current_stock = 0 WHERE id = @ProductId;
 
-            -- Dodajemy zlecenie produkcyjne
             SELECT @ProductionId = ISNULL(MAX(id), 0) + 1 FROM CompanyOrders;
             INSERT INTO CompanyOrders (id, product_id, quantity, order_date)
             VALUES (@ProductionId, @ProductId, @MissingQuantity, GETDATE());
@@ -85,8 +78,7 @@ BEGIN
 END;
 GO
 
--- 3. Zakończ produkcję (Magazyn)
--- Realizuje - aktualizacja stanów
+-- 3. Procedura: Zakończenie produkcji i aktualizacja stanu magazynowego
 CREATE OR ALTER PROCEDURE sp_CompleteProduction
     @ProductionOrderId INT
 AS
@@ -103,7 +95,6 @@ BEGIN
         BEGIN
             UPDATE Products SET current_stock = current_stock + @Qty WHERE id = @ProdId;
             DELETE FROM CompanyOrders WHERE id = @ProductionOrderId;
-            PRINT 'Produkcja zakończona. Stan magazynowy zaktualizowany.';
         END
         COMMIT TRANSACTION;
     END TRY
@@ -114,8 +105,7 @@ BEGIN
 END;
 GO
 
--- 4. Dodaj Klienta (CRUD - Administracja)
--- Odpowiednik 'dodaj_firme' z przykładowego PDFa
+-- 4. Procedura: Rejestracja nowego klienta wraz z adresem
 CREATE OR ALTER PROCEDURE sp_RegisterCustomer
     @FirstName VARCHAR(255),
     @LastName VARCHAR(255),
@@ -139,7 +129,6 @@ BEGIN
         VALUES (ISNULL((SELECT MAX(id) FROM Addresses),0)+1, @NewCustomerId, @AddressLine1, @City, @PostalCode, @Country);
 
         COMMIT TRANSACTION;
-        PRINT 'Klient dodany.';
     END TRY
     BEGIN CATCH
         ROLLBACK TRANSACTION;
@@ -148,8 +137,7 @@ BEGIN
 END;
 GO
 
--- 5. Dodaj Produkt (CRUD - Administracja)
--- UWAGA: Dostosowano do nowego schematu (brak kolumny SKU!)
+-- 5. Procedura: Dodawanie nowego produktu do katalogu
 CREATE OR ALTER PROCEDURE sp_AddNewProduct
     @Name VARCHAR(255),
     @CategoryName VARCHAR(255),
@@ -172,16 +160,13 @@ BEGIN
 
     INSERT INTO Products (id, name, labor_price, category_id, current_stock, production_time_hours)
     VALUES (@NewProdId, @Name, @LaborPrice, @CatId, 0, @ProductionTimeHours);
-
-    PRINT 'Produkt dodany: ' + @Name;
 END;
 GO
 
--- 6. Anuluj Zamówienie (Logika zwrotu towaru)
--- To jest "feature premium". Anulowanie zamówienia zwraca towar na magazyn.
+-- 6. Procedura: Anulowanie zamówienia i zwrot zarezerwowanego towaru na stan magazynowy
 CREATE OR ALTER PROCEDURE sp_CancelOrder
     @OrderId INT,
-    @Reason VARCHAR(255) -- Opcjonalnie do logów
+    @Reason VARCHAR(255)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -189,19 +174,16 @@ BEGIN
         BEGIN TRANSACTION;
         IF NOT EXISTS (SELECT 1 FROM Orders WHERE id = @OrderId) THROW 50001, 'Brak zamówienia.', 1;
 
-        -- 1. Zwrot towaru na magazyn (automatycznie)
         UPDATE p
         SET p.current_stock = p.current_stock + od.quantity
         FROM Products p
         JOIN OrderDetails od ON p.id = od.product_id
         WHERE od.order_id = @OrderId;
 
-        -- 2. Usuwanie powiązań (najpierw tabele zależne)
-        DELETE FROM Shipments WHERE order_id = @OrderId; -- Jeśli była wysyłka
+        DELETE FROM Shipments WHERE order_id = @OrderId;
         DELETE FROM OrderDetails WHERE order_id = @OrderId;
         DELETE FROM Orders WHERE id = @OrderId;
 
-        PRINT 'Zamówienie anulowane. Towar zwrócony na stan magazynowy.';
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
