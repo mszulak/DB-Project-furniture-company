@@ -1,0 +1,10 @@
+insert into Category (id, category_name) values (1, 'Living Room');
+insert into Category (id, category_name) values (2, 'Bedroom');
+insert into Category (id, category_name) values (3, 'Kitchen & Dining');
+insert into Category (id, category_name) values (4, 'Office & Study');
+insert into Category (id, category_name) values (5, 'Kids & Nursery');
+insert into Category (id, category_name) values (6, 'Hallway & Entry');
+insert into Category (id, category_name) values (7, 'Outdoor Furniture');
+insert into Category (id, category_name) values (8, 'Storage & Wardrobes');
+insert into Category (id, category_name) values (9, 'Bathroom Furniture');
+insert into Category (id, category_name) values (10, 'Lighting & Lamps');
