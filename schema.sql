@@ -120,3 +120,4 @@ CREATE TABLE CompanyOrders (
     FOREIGN KEY (product_id) REFERENCES Products(id)
 );
 
+
