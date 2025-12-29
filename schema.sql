@@ -111,6 +111,7 @@ CREATE TABLE Reviews (
     FOREIGN KEY (customer_id) REFERENCES Customers(id)
 );
 
+
 CREATE TABLE CompanyOrders (
     id INTEGER PRIMARY KEY,
     product_id INTEGER NOT NULL,
