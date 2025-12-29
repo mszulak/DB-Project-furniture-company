@@ -41,7 +41,8 @@ CREATE TABLE Products (
     id INTEGER PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     labor_price FLOAT NOT NULL DEFAULT 0,
-    sku INTEGER NOT NULL UNIQUE,
+    current_stock INTEGER NOT NULL DEFAULT 0,
+    production_time_hours INTEGER NOT NULL DEFAULT 1,
     category_id INTEGER NOT NULL,
     FOREIGN KEY (category_id) REFERENCES Category(id)
 );
