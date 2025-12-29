@@ -1,3 +1,5 @@
+USE test_db;
+
 insert into Customers (id, first_name, last_name, email) values (1, 'Horatia', 'Bowkley', 'hbowkley0@zimbio.com');
 insert into Customers (id, first_name, last_name, email) values (2, 'Bryn', 'Girdlestone', 'bgirdlestone1@mayoclinic.com');
 insert into Customers (id, first_name, last_name, email) values (3, 'Kacey', 'Pentony', 'kpentony2@state.tx.us');
