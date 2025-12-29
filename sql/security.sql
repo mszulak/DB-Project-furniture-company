@@ -17,41 +17,52 @@ GO
 ----------------------------------------------------
 -- UPRAWNIENIA: Manager
 ----------------------------------------------------
--- Manager może czytać wszystko (potrzebne do raportów finansowych i magazynowych)
+-- Manager może czytać wszystko (potrzebne do raportów)
 GRANT SELECT ON SCHEMA::dbo TO Manager;
 -- Ale nie pozwalamy mu nic zmieniać (bezpieczeństwo danych historycznych)
 DENY INSERT, UPDATE, DELETE ON SCHEMA::dbo TO Manager;
+-- Może korzystać z funkcji analitycznych (VIP, koszty)
+GRANT EXECUTE ON dbo.fn_CalculateOrderValue TO Manager;
+GRANT EXECUTE ON dbo.fn_GetCustomerTotalSpent TO Manager;
 
 ----------------------------------------------------
 -- UPRAWNIENIA: WarehouseWorker
 ----------------------------------------------------
--- Musi widzieć co wyprodukować (CompanyOrders) i co wysłać (Shipments)
+-- Musi widzieć co wyprodukować (CompanyOrders) i stany magazynowe
 GRANT SELECT ON CompanyOrders TO WarehouseWorker;
-GRANT SELECT ON Shipments TO WarehouseWorker;
+GRANT SELECT ON Products TO WarehouseWorker;
 GRANT SELECT ON OrderDetails TO WarehouseWorker;
 
--- Musi aktualizować stan magazynowy po wyprodukowaniu lub wydaniu towaru
+-- Musi aktualizować stan magazynowy po wyprodukowaniu
 GRANT UPDATE (current_stock) ON Products TO WarehouseWorker;
 
--- Może odczytywać procedury planowania, ale niekoniecznie je modyfikować
-GRANT EXECUTE ON OBJECT::sp_GetProductionPlan TO WarehouseWorker;
+-- KLUCZOWE: Uprawnienie do procedury zamykania produkcji
+GRANT EXECUTE ON OBJECT::sp_CompleteProduction TO WarehouseWorker;
 
 ----------------------------------------------------
 -- UPRAWNIENIA: SalesPerson
 ----------------------------------------------------
--- Sprzedawca dodaje klientów i adresy
+-- Sprzedawca dodaje/edytuje klientów i adresy
 GRANT INSERT, SELECT, UPDATE ON Customers TO SalesPerson;
 GRANT INSERT, SELECT, UPDATE ON Addresses TO SalesPerson;
 
--- Sprzedawca składa zamówienia (korzysta z procedury, która robi INSERT do Orders/Details)
-GRANT EXECUTE ON OBJECT::sp_CreateCustomerOrder TO SalesPerson;
--- Musi mieć uprawnienie do INSERT w tabelach, na których operuje procedura,
--- chyba że procedura ma "WITH EXECUTE AS OWNER", ale załóżmy standardowy model:
+-- Sprzedawca widzi produkty i ceny
+GRANT SELECT ON Products TO SalesPerson;
+GRANT EXECUTE ON dbo.fn_CalculateProductionCost TO SalesPerson; -- Żeby widział wyceny
+
+-- KLUCZOWE: Uprawnienia do procedur biznesowych (te, które masz w pliku procedures.sql)
+GRANT EXECUTE ON OBJECT::sp_PlaceOrder TO SalesPerson;           -- Składanie zamówienia
+GRANT EXECUTE ON OBJECT::sp_CheckAvailabilityAndCost TO SalesPerson; -- Sprawdzanie ceny
+GRANT EXECUTE ON OBJECT::sp_RegisterCustomer TO SalesPerson;     -- Dodawanie klienta
+GRANT EXECUTE ON OBJECT::sp_CancelOrder TO SalesPerson;          -- Anulowanie
+
+-- Uprawnienia do tabel pod spodem (niezbędne, by procedury działały na koncie usera)
 GRANT INSERT ON Orders TO SalesPerson;
 GRANT INSERT ON OrderDetails TO SalesPerson;
-GRANT SELECT ON Products TO SalesPerson; -- Musi widzieć co sprzedaje
+GRANT DELETE ON OrderDetails TO SalesPerson; -- Potrzebne do anulowania
+GRANT DELETE ON Orders TO SalesPerson;       -- Potrzebne do anulowania
 
--- Sprzedawca nie powinien widzieć kosztów produkcji (Parts, Suppliers), tylko cenę końcową
+-- Sprzedawca nie powinien widzieć kosztów części od dostawców (Tajemnica firmy)
 DENY SELECT ON PartsSupplier TO SalesPerson;
 DENY SELECT ON Parts TO SalesPerson;
 GO
