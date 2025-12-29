@@ -1,69 +1,39 @@
 USE test_db;
 GO
 
--- 1. TRIGGER: Walidacja szczegółów zamówienia
--- Realizuje "warunki integralności" - biznesowe zasady poprawności danych.
-CREATE OR ALTER TRIGGER trg_ValidateOrderDetails
-ON OrderDetails
-AFTER INSERT, UPDATE
+-- 1. Koszt produkcji (Części + Robocizna)
+CREATE OR ALTER FUNCTION fn_CalculateProductionCost (@ProductId INT)
+RETURNS FLOAT
 AS
 BEGIN
-    SET NOCOUNT ON;
+    DECLARE @TotalCost FLOAT;
+    DECLARE @LaborCost FLOAT;
+    DECLARE @PartsCost FLOAT;
 
-    -- Sprawdzenie 1: Czy rabat jest w widełkach 0-100%?
-    -- Realizuje wymaganie "przydzielenie jednostkowego rabatu" , ale pilnuje, by był sensowny.
-    IF EXISTS (SELECT 1 FROM inserted WHERE discount < 0 OR discount > 100)
-    BEGIN
-        RAISERROR('Błąd: Rabat musi mieścić się w przedziale 0-100%.', 16, 1);
-        ROLLBACK TRANSACTION;
-        RETURN;
-    END
+    SELECT @LaborCost = labor_price FROM Products WHERE id = @ProductId;
 
-    -- Sprawdzenie 2: Czy ilość jest dodatnia?
-    IF EXISTS (SELECT 1 FROM inserted WHERE quantity <= 0)
-    BEGIN
-        RAISERROR('Błąd: Ilość zamawianego towaru musi być większa od 0.', 16, 1);
-        ROLLBACK TRANSACTION;
-        RETURN;
-    END
+    SELECT @PartsCost = SUM(p.unit_price * pe.quantity)
+    FROM Parts p
+    JOIN ProductElements pe ON p.id = pe.parts_id
+    WHERE pe.product_id = @ProductId;
+
+    RETURN ISNULL(@LaborCost, 0) + ISNULL(@PartsCost, 0);
 END;
 GO
 
--- 2. TRIGGER: Zabezpieczenie stanu magazynowego
--- To jest "bezpiecznik". Nawet jak ktoś ręcznie zrobi UPDATE Products,
--- trigger nie pozwoli ustawić ujemnego stanu.
-CREATE OR ALTER TRIGGER trg_PreventNegativeStock
-ON Products
-AFTER UPDATE
+-- 2. Wartość zamówienia (do raportów sprzedażowych)
+CREATE OR ALTER FUNCTION fn_CalculateOrderValue (@OrderId INT)
+RETURNS FLOAT
 AS
 BEGIN
-    SET NOCOUNT ON;
+    DECLARE @TotalValue FLOAT;
+    -- Zakładamy, że cena sprzedaży to Koszt * 1.4 (marża)
+    SELECT @TotalValue = SUM(
+        (dbo.fn_CalculateProductionCost(od.product_id) * 1.4) * od.quantity - od.discount
+    )
+    FROM OrderDetails od
+    WHERE od.order_id = @OrderId;
 
-    -- Jeśli po aktualizacji stan (current_stock) jest mniejszy od 0 -> Cofnij
-    IF EXISTS (SELECT 1 FROM inserted WHERE current_stock < 0)
-    BEGIN
-        RAISERROR('Błąd krytyczny: Stan magazynowy nie może być ujemny!', 16, 1);
-        ROLLBACK TRANSACTION;
-        RETURN;
-    END
-END;
-GO
-
--- 3. TRIGGER: Automatyczna data modyfikacji (opcjonalny bajer)
--- Jak ktoś zmieni status płatności, to chcemy mieć pewność, że data płatności jest aktualna
-CREATE OR ALTER TRIGGER trg_UpdatePaymentDate
-ON Payments
-AFTER INSERT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    -- Jeśli wstawiono rekord bez daty (NULL), ustawiamy GETDATE()
-    -- W Twoim schemacie jest DEFAULT, ale to zabezpiecza przed jawnym wpisaniem NULLa
-    UPDATE p
-    SET payment_date = GETDATE()
-    FROM Payments p
-    JOIN inserted i ON p.id = i.id
-    WHERE i.payment_date IS NULL;
+    RETURN ISNULL(@TotalValue, 0);
 END;
 GO
