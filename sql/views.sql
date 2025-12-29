@@ -1,5 +1,31 @@
 -- Views
 -- TODO dodac viewsy ze sprzedazy w ujęciu tygodniowym, rocznym
+-- 7a. Sprzedaż produktów w ujęciu tygodniowym (TODO realizacja)
+CREATE VIEW WEEKLY_SALES_REPORT AS
+SELECT
+    YEAR(o.order_date) AS SalesYear,
+    DATEPART(week, o.order_date) AS SalesWeek, -- Zwraca numer tygodnia (1-52)
+    p.name AS ProductName,
+    SUM(od.quantity) AS TotalQuantity
+FROM Orders o
+JOIN OrderDetails od ON o.id = od.order_id
+JOIN Products p ON od.product_id = p.id
+GROUP BY YEAR(o.order_date), DATEPART(week, o.order_date), p.name;
+
+GO
+
+-- 7b. Sprzedaż produktów w ujęciu rocznym (TODO realizacja)
+CREATE VIEW YEARLY_SALES_REPORT AS
+SELECT
+    YEAR(o.order_date) AS SalesYear,
+    p.name AS ProductName,
+    SUM(od.quantity) AS TotalQuantity
+FROM Orders o
+JOIN OrderDetails od ON o.id = od.order_id
+JOIN Products p ON od.product_id = p.id
+GROUP BY YEAR(o.order_date), p.name;
+
+GO
 
 -- 1. Raport kosztów produkcji jednostkowej
 CREATE VIEW PRODUCT_PRODUCTION_COST_VIEW AS
