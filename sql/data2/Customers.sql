@@ -1,0 +1,22 @@
+USE test_db;
+
+insert into Customers (id, first_name, last_name, email) values (1, 'Brit', 'Baxster', 'bbaxster0@phoca.cz');
+insert into Customers (id, first_name, last_name, email) values (2, 'Maurene', 'Hessenthaler', 'mhessenthaler1@istockphoto.com');
+insert into Customers (id, first_name, last_name, email) values (3, 'Costanza', 'Tarren', 'ctarren2@fema.gov');
+insert into Customers (id, first_name, last_name, email) values (4, 'Filmore', 'Wainscoat', 'fwainscoat3@paginegialle.it');
+insert into Customers (id, first_name, last_name, email) values (5, 'Tally', 'Soares', 'tsoares4@goo.ne.jp');
+insert into Customers (id, first_name, last_name, email) values (6, 'Ches', 'Campion', 'ccampion5@techcrunch.com');
+insert into Customers (id, first_name, last_name, email) values (7, 'Debor', 'Took', 'dtook6@ucoz.com');
+insert into Customers (id, first_name, last_name, email) values (8, 'Devin', 'McCooke', 'dmccooke7@pinterest.com');
+insert into Customers (id, first_name, last_name, email) values (9, 'Lula', 'Winstone', 'lwinstone8@w3.org');
+insert into Customers (id, first_name, last_name, email) values (10, 'Arlena', 'Swithenby', 'aswithenby9@eepurl.com');
+insert into Customers (id, first_name, last_name, email) values (11, 'Vince', 'Spinetti', 'vspinettia@nasa.gov');
+insert into Customers (id, first_name, last_name, email) values (12, 'Gayla', 'Shedd', 'gsheddb@statcounter.com');
+insert into Customers (id, first_name, last_name, email) values (13, 'Cyril', 'St. Paul', 'cstpaulc@intel.com');
+insert into Customers (id, first_name, last_name, email) values (14, 'Carie', 'Ahrenius', 'cahreniusd@cornell.edu');
+insert into Customers (id, first_name, last_name, email) values (15, 'Menard', 'Feltoe', 'mfeltoee@comsenz.com');
+insert into Customers (id, first_name, last_name, email) values (16, 'Sandye', 'Cessford', 'scessfordf@dion.ne.jp');
+insert into Customers (id, first_name, last_name, email) values (17, 'Gertrudis', 'Havoc', 'ghavocg@theguardian.com');
+insert into Customers (id, first_name, last_name, email) values (18, 'Lammond', 'Norton', 'lnortonh@businessweek.com');
+insert into Customers (id, first_name, last_name, email) values (19, 'Clea', 'Jurczak', 'cjurczaki@accuweather.com');
+insert into Customers (id, first_name, last_name, email) values (20, 'Bili', 'O''Dougherty', 'bodoughertyj@hp.com');
