@@ -1,81 +1,119 @@
 USE test_db;
 
--- ==========================================================
--- 1. Klienci
--- ==========================================================
-CREATE TABLE Klienci (
-    id_klienta INT IDENTITY(1,1) PRIMARY KEY,
-    imie NVARCHAR(50) NOT NULL,
-    nazwisko NVARCHAR(50) NOT NULL,
-    email NVARCHAR(100) NOT NULL UNIQUE,
-    telefon NVARCHAR(20),
-    data_rejestracji DATETIME2 DEFAULT SYSDATETIME()
+CREATE TABLE PartsSupplier (
+    id INTEGER PRIMARY KEY,
+    supplier_name VARCHAR(255) NOT NULL
 );
-GO
 
--- ==========================================================
--- 2. Produkty
--- ==========================================================
-CREATE TABLE Produkty (
-    id_produktu INT IDENTITY(1,1) PRIMARY KEY,
-    nazwa NVARCHAR(100) NOT NULL,
-    cena DECIMAL(10,2) NOT NULL CHECK (cena >= 0),
-    stan_magazynowy INT NOT NULL DEFAULT 0 CHECK (stan_magazynowy >= 0),
-    opis NVARCHAR(255)
+CREATE TABLE Category (
+    id INTEGER PRIMARY KEY,
+    category_name VARCHAR(255) NOT NULL UNIQUE
 );
-GO
 
--- ==========================================================
--- 3. Zamowienia
--- ==========================================================
-CREATE TABLE Zamowienia (
-    id_zamowienia INT IDENTITY(1,1) PRIMARY KEY,
-    id_klienta INT NOT NULL,
-    data_zamowienia DATETIME2 DEFAULT SYSDATETIME(),
-    status NVARCHAR(20) NOT NULL DEFAULT 'NOWE',
-    CONSTRAINT FK_Zamowienia_Klienci FOREIGN KEY (id_klienta)
-        REFERENCES Klienci(id_klienta)
-        ON DELETE CASCADE
+CREATE TABLE Customers (
+    id INTEGER PRIMARY KEY,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE
 );
-GO
 
--- ==========================================================
--- 4. PozycjeZamowienia
--- ==========================================================
-CREATE TABLE PozycjeZamowienia (
-    id_pozycji INT IDENTITY(1,1) PRIMARY KEY,
-    id_zamowienia INT NOT NULL,
-    id_produktu INT NOT NULL,
-    ilosc INT NOT NULL CHECK (ilosc > 0),
-    cena_jednostkowa DECIMAL(10,2) NOT NULL CHECK (cena_jednostkowa >= 0),
-    CONSTRAINT FK_Pozycje_Zamowienia FOREIGN KEY (id_zamowienia)
-        REFERENCES Zamowienia(id_zamowienia)
-        ON DELETE CASCADE,
-    CONSTRAINT FK_Pozycje_Produkty FOREIGN KEY (id_produktu)
-        REFERENCES Produkty(id_produktu)
+CREATE TABLE Shippers (
+    id INTEGER PRIMARY KEY,
+    shipper_name VARCHAR(255) NOT NULL
 );
-GO
 
--- ==========================================================
--- 5. Platnosci
--- ==========================================================
-CREATE TABLE Platnosci (
-    id_platnosci INT IDENTITY(1,1) PRIMARY KEY,
-    id_zamowienia INT NOT NULL UNIQUE,
-    metoda NVARCHAR(30) NOT NULL,
-    kwota DECIMAL(10,2) NOT NULL CHECK (kwota >= 0),
-    status NVARCHAR(20) NOT NULL DEFAULT 'OCZEKUJĄCA',
-    data_platnosci DATETIME2 DEFAULT SYSDATETIME(),
-    CONSTRAINT FK_Platnosci_Zamowienia FOREIGN KEY (id_zamowienia)
-        REFERENCES Zamowienia(id_zamowienia)
-        ON DELETE CASCADE
+CREATE TABLE Payments (
+    id INTEGER PRIMARY KEY,
+    transaction_id VARCHAR(255) NOT NULL UNIQUE,
+    payment_date DATETIME DEFAULT GETDATE() 
 );
-GO
 
--- ==========================================================
--- Indeksy dodatkowe
--- ==========================================================
-CREATE INDEX IX_Produkty_Nazwa ON Produkty(nazwa);
-CREATE INDEX IX_Zamowienia_Klient ON Zamowienia(id_klienta);
-CREATE INDEX IX_Pozycje_Zamowienia ON PozycjeZamowienia(id_zamowienia);
-GO
+
+CREATE TABLE Parts (
+    id INTEGER PRIMARY KEY,
+    supplier_id INTEGER NOT NULL,
+    part_name VARCHAR(255) NOT NULL,
+    unit_price FLOAT NOT NULL DEFAULT 0,
+    FOREIGN KEY (supplier_id) REFERENCES PartsSupplier(id)
+);
+
+CREATE TABLE Products (
+    id INTEGER PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    labor_price FLOAT NOT NULL DEFAULT 0,
+    sku INTEGER NOT NULL UNIQUE,
+    category_id INTEGER NOT NULL,
+    FOREIGN KEY (category_id) REFERENCES Category(id)
+);
+
+CREATE TABLE Addresses (
+    id INTEGER PRIMARY KEY,
+    customer_id INTEGER NOT NULL,
+    address_line_1 VARCHAR(255) NOT NULL,
+    address_line_2 VARCHAR(255),
+    city VARCHAR(255) NOT NULL,
+    state VARCHAR(255),
+    postal_code VARCHAR(20) NOT NULL,
+    country VARCHAR(255) NOT NULL,
+    FOREIGN KEY (customer_id) REFERENCES Customers(id)
+);
+
+CREATE TABLE Orders (
+    id INTEGER PRIMARY KEY,
+    customer_id INTEGER NOT NULL,
+    order_date DATE NOT NULL DEFAULT GETDATE(), -- Poprawione: GETDATE() zamiast CURRENT_DATE
+    FOREIGN KEY (customer_id) REFERENCES Customers(id)
+);
+
+-- 3. Tabele łączące i zagnieżdżone
+
+CREATE TABLE ProductElements (
+    id INTEGER PRIMARY KEY,
+    parts_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    UNIQUE (product_id, parts_id),
+    FOREIGN KEY (parts_id) REFERENCES Parts(id),
+    FOREIGN KEY (product_id) REFERENCES Products(id)
+);
+
+CREATE TABLE OrderDetails (
+    id INTEGER PRIMARY KEY,
+    product_id INTEGER NOT NULL,
+    order_id INTEGER NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    discount INTEGER DEFAULT 0,
+    UNIQUE (order_id, product_id),
+    FOREIGN KEY (product_id) REFERENCES Products(id),
+    FOREIGN KEY (order_id) REFERENCES Orders(id)
+);
+
+CREATE TABLE Shipments (
+    id INTEGER PRIMARY KEY,
+    order_id INTEGER NOT NULL UNIQUE,
+    address_id INTEGER NOT NULL,
+    payment_id INTEGER NOT NULL UNIQUE,
+    shipper_id INTEGER NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES Orders(id),
+    FOREIGN KEY (address_id) REFERENCES Addresses(id),
+    FOREIGN KEY (payment_id) REFERENCES Payments(id),
+    FOREIGN KEY (shipper_id) REFERENCES Shippers(id)
+);
+
+CREATE TABLE Reviews (
+    id INTEGER PRIMARY KEY,
+    product_id INTEGER NOT NULL,
+    customer_id INTEGER NOT NULL,
+    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    review VARCHAR(MAX), 
+    FOREIGN KEY (product_id) REFERENCES Products(id),
+    FOREIGN KEY (customer_id) REFERENCES Customers(id)
+);
+
+CREATE TABLE CompanyOrders (
+    id INTEGER PRIMARY KEY,
+    product_id INTEGER NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    order_date DATE NOT NULL DEFAULT GETDATE(), 
+    FOREIGN KEY (product_id) REFERENCES Products(id)
+);
