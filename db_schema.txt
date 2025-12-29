@@ -1,0 +1,134 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+Table Parts {
+  id integer [primary key]
+  supplier_id integer [not null]
+  part_name varchar [not null]
+  unit_price float [not null, default: 0]
+}
+
+Table Products {
+  id integer [primary key]
+  name varchar [not null]
+  labor_price float [not null, default: 0]
+  sku integer [not null] // Kod produktu musi być unikalny
+  category_id integer [not null]
+}
+
+Table Category {
+  id integer [primary key]
+  category_name varchar [not null, unique]
+}
+
+Table ProductElements {
+  id integer [primary key]
+  parts_id integer [not null]
+  product_id integer [not null]
+  quantity integer [not null, default: 1]
+
+  indexes {
+    (product_id, parts_id) [unique] // Zapobiega duplikatom części w produkcie
+  }
+}
+
+Table Orders {
+  id integer [primary key]
+  customer_id integer [not null]
+  order_date date [not null, default: `now()`]
+}
+
+Table OrderDetails {
+  id integer [primary key]
+  product_id integer [not null]
+  order_id integer [not null]
+  quantity integer [not null, default: 1]
+  discount integer [default: 0]
+
+  indexes {
+    (order_id, product_id) [unique] // Zapobiega duplikatom produktu w zamówieniu
+  }
+}
+
+Table PartsSupplier {
+  id integer [primary key]
+  supplier_name varchar [not null]
+}
+
+Table Customers {
+  id integer [primary key]
+  first_name varchar [not null]
+  last_name varchar [not null]
+  email varchar [unique, not null] // Email musi być unikalny
+}
+
+Table Shipments {
+  id integer [primary key]
+  order_id integer [not null, unique] // Jeden shipment na jedno zamówienie
+  address_id integer [not null]
+  payment_id integer [not null, unique] // Jeden shipment na jedną płatność
+  shipper_id integer [not null]
+}
+
+Table Shippers {
+  id integer [primary key]
+  shipper_name varchar [not null]
+}
+
+Table Addresses {
+  id integer [primary key]
+  customer_id integer [not null]
+  address_line_1 varchar [not null]
+  address_line_2 varchar
+  city varchar [not null]
+  state varchar
+  postal_code varchar [not null]
+  country varchar [not null]
+}
+
+Table Payments {
+  id integer [primary key]
+  transaction_id varchar [unique, not null]
+  payment_date datetime [default: `now()`]
+}
+
+Table Reviews {
+  id integer [primary key]
+  product_id integer [not null]
+  customer_id integer [not null]
+  rating integer [not null, note: 'Value between 1 and 5'] 
+  review text
+}
+
+Table CompanyOrders {
+  id integer [primary key]
+  product_id integer [not null]
+  quantity integer [not null, default: 1]
+  order_date date [not null, default: `now()`]
+}
+
+// RELACJE (Relationships)
+// Syntax: Ref: Many_Side.col > One_Side.col
+
+Ref: ProductElements.product_id > Products.id 
+Ref: ProductElements.parts_id > Parts.id 
+
+Ref: Parts.supplier_id > PartsSupplier.id
+Ref: OrderDetails.product_id > Products.id 
+
+Ref: OrderDetails.order_id > Orders.id 
+Ref: Orders.customer_id > Customers.id 
+
+// Relacje w Shipments (One-to-One dla Order i Payment, Many-to-One dla Address i Shipper)
+Ref: Shipments.address_id > Addresses.id 
+Ref: Shipments.order_id - Orders.id // One-to-one
+Ref: Shipments.payment_id - Payments.id // One-to-one
+Ref: Shipments.shipper_id > Shippers.id 
+
+Ref: Addresses.customer_id > Customers.id 
+
+Ref: Reviews.product_id > Products.id 
+Ref: Reviews.customer_id > Customers.id 
+
+Ref: CompanyOrders.product_id > Products.id 
+Ref: Products.category_id > Category.id
