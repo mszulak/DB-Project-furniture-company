@@ -1,0 +1,28 @@
+USE test_db;
+
+INSERT INTO Reviews (id, product_id, customer_id, rating, review) VALUES
+(1, 1, 1, 5, 'Excellent quality oak chair.'), (2, 2, 2, 4, 'Sturdy table but heavy.'),
+(3, 4, 3, 5, 'Best sleep ever on this bed.'), (4, 10, 4, 3, 'Glass is thin but looks good.'),
+(5, 15, 5, 5, 'Beautiful mid-century design.'), (6, 20, 6, 2, 'Color was different from photo.'),
+(7, 30, 7, 5, 'Very comfortable hammock.'), (8, 40, 8, 4, 'Easy to assemble porch swing.'),
+(9, 50, 9, 5, 'Perfect bench for the entryway.'), (10, 60, 10, 5, 'Classic rocking chair, love it.'),
+(11, 1, 11, 4, 'Solid wood.'), (12, 2, 12, 5, 'Fits perfectly in my living room.'),
+(13, 4, 13, 5, 'Luxurious velvet feel.'), (14, 10, 14, 4, 'Functional nesting tables.'),
+(15, 15, 15, 5, 'Spacious sideboard.'), (16, 20, 16, 1, 'Arrived with a scratch.'),
+(17, 30, 17, 5, 'Durable outdoor material.'), (18, 40, 18, 4, 'Nice addition to the garden.'),
+(19, 50, 19, 5, 'Soft upholstery.'), (20, 60, 20, 4, 'Good value for money.'),
+(21, 71, 1, 5, 'Elegant wingback chair.'), (22, 81, 2, 5, 'Magnificent sofa.'),
+(23, 91, 3, 4, 'Comfortable club chair.'), (24, 5, 4, 5, 'Great garden bench.'),
+(25, 15, 5, 4, 'Good storage space.'), (26, 25, 6, 5, 'Classic Adirondack style.'),
+(27, 35, 7, 3, 'Average picnic set.'), (28, 45, 8, 5, 'Stunning canopy bed.'),
+(29, 55, 9, 4, 'Simple bistro set.'), (30, 65, 10, 5, 'Great sofa bed for guests.'),
+(31, 75, 11, 4, 'Strong umbrella table.'), (32, 85, 12, 5, 'Very relaxing lounge.'),
+(33, 95, 13, 2, 'Hard to hang up.'), (34, 11, 14, 5, 'Sturdy bar stools.'),
+(35, 21, 15, 4, 'Nice velvet color.'), (36, 31, 16, 5, 'Huge and comfy bean bag.'),
+(37, 41, 17, 3, 'Basic card table.'), (38, 51, 18, 5, 'Beautiful cherry wood.'),
+(39, 61, 19, 5, 'Solid standing desk.'), (40, 71, 20, 4, 'Nice fabric texture.'),
+(41, 81, 1, 5, 'A masterpiece of a sofa.'), (42, 91, 2, 4, 'Good support.'),
+(43, 6, 3, 5, 'Saved my back! Great chair.'), (44, 16, 4, 5, 'Simple and effective shoe rack.'),
+(45, 26, 5, 4, 'Cute vanity stool.'), (46, 36, 6, 4, 'Good dining chair.'),
+(47, 46, 7, 5, 'Perfect for sunbathing.'), (48, 56, 8, 4, 'Handy stool.'),
+(49, 66, 9, 5, 'Ultimate relaxation.'), (50, 76, 10, 4, 'Cool saddle design.');
