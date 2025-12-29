@@ -119,3 +119,4 @@ CREATE TABLE CompanyOrders (
     order_date DATE NOT NULL DEFAULT GETDATE(), -- Poprawione: GETDATE() zamiast CURRENT_DATE
     FOREIGN KEY (product_id) REFERENCES Products(id)
 );
+
