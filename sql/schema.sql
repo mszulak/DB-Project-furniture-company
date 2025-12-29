@@ -54,7 +54,7 @@ CREATE TABLE Addresses (
     address_line_2 VARCHAR(255),
     city VARCHAR(255) NOT NULL,
     state VARCHAR(255),
-    postal_code VARCHAR(20) NOT NULL,
+    postal_code VARCHAR(20),
     country VARCHAR(255) NOT NULL,
     FOREIGN KEY (customer_id) REFERENCES Customers(id)
 );
