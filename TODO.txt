@@ -1,0 +1,3 @@
+Bundle sql data files to single file for easier deployment
+Create final project presentation
+Add documentation
