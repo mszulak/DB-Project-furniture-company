@@ -567,7 +567,7 @@ insert into ProductElements (id, parts_id, product_id, quantity) values (191, 31
 insert into ProductElements (id, parts_id, product_id, quantity) values (192, 12, 96, 8);
 insert into ProductElements (id, parts_id, product_id, quantity) values (193, 6, 98, 10);
 insert into ProductElements (id, parts_id, product_id, quantity) values (194, 35, 58, 6);
-insert into ProductElements (id, parts_id, product_id, quantity) values (195, 11, 196, 2);
+insert into ProductElements (id, parts_id, product_id, quantity) values (195, 12, 196, 2);
 insert into ProductElements (id, parts_id, product_id, quantity) values (196, 15, 99, 6);
 insert into ProductElements (id, parts_id, product_id, quantity) values (197, 23, 197, 4);
 insert into ProductElements (id, parts_id, product_id, quantity) values (198, 41, 140, 2);
