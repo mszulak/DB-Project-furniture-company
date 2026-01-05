@@ -157,13 +157,13 @@ JOIN Addresses a ON s.address_id = a.id;
 GO
 
 -- 12. Podgląd opinii.
--- Pokazuje kto i jaki produkt ocenił.
+-- Pokazuje kto, jaki produkt i jak ocenił.
 CREATE OR ALTER VIEW PRODUCT_REVIEWS_VIEW AS
 SELECT
     p.name AS ProductName,
     c.first_name + ' ' + c.last_name AS CustomerName,
-    r.rating,  -- Zakładam, że masz takie kolumny w tabeli Reviews
-    r.comment  -- Warto dodać treść opinii, jeśli tabela ją posiada
+    r.rating,
+    r.review
 FROM Reviews r
 JOIN Products p ON r.product_id = p.id
 JOIN Customers c ON r.customer_id = c.id;
