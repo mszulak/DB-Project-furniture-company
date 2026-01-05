@@ -1,31 +1,4 @@
 -- Views
--- TODO dodac viewsy ze sprzedazy w ujęciu tygodniowym, rocznym
--- 7a. Sprzedaż produktów w ujęciu tygodniowym (TODO realizacja)
-CREATE VIEW WEEKLY_SALES_REPORT AS
-SELECT
-    YEAR(o.order_date) AS SalesYear,
-    DATEPART(week, o.order_date) AS SalesWeek, -- Zwraca numer tygodnia (1-52)
-    p.name AS ProductName,
-    SUM(od.quantity) AS TotalQuantity
-FROM Orders o
-JOIN OrderDetails od ON o.id = od.order_id
-JOIN Products p ON od.product_id = p.id
-GROUP BY YEAR(o.order_date), DATEPART(week, o.order_date), p.name;
-
-GO
-
--- 7b. Sprzedaż produktów w ujęciu rocznym (TODO realizacja)
-CREATE VIEW YEARLY_SALES_REPORT AS
-SELECT
-    YEAR(o.order_date) AS SalesYear,
-    p.name AS ProductName,
-    SUM(od.quantity) AS TotalQuantity
-FROM Orders o
-JOIN OrderDetails od ON o.id = od.order_id
-JOIN Products p ON od.product_id = p.id
-GROUP BY YEAR(o.order_date), p.name;
-
-GO
 
 -- 1. Raport kosztów produkcji jednostkowej
 CREATE VIEW PRODUCT_PRODUCTION_COST_VIEW AS
@@ -115,8 +88,20 @@ GROUP BY p.id, p.name;
 
 GO
 
--- 7. Sprzedaż produktów w ujęciu miesięcznym
--- TODO Dodac w ujeciu tygodniowym rocznym
+-- 7. Sprzedaż produktów w ujęciu rocznym 
+CREATE VIEW YEARLY_SALES_REPORT AS
+SELECT
+    YEAR(o.order_date) AS SalesYear,
+    p.name AS ProductName,
+    SUM(od.quantity) AS TotalQuantity
+FROM Orders o
+JOIN OrderDetails od ON o.id = od.order_id
+JOIN Products p ON od.product_id = p.id
+GROUP BY YEAR(o.order_date), p.name;
+
+GO 
+
+-- 8. Sprzedaż produktów w ujęciu miesięcznym
 CREATE VIEW MONTHLY_SALES_REPORT AS
 SELECT
     YEAR(o.order_date) AS SalesYear,
@@ -130,7 +115,21 @@ GROUP BY YEAR(o.order_date), MONTH(o.order_date), p.name;
 
 GO
 
--- 8. Produkty zaplanowane do produkcji zamówienia wewnętrzne
+-- 9. Sprzedaż produktów w ujęciu tygodniowym
+CREATE VIEW WEEKLY_SALES_REPORT AS
+SELECT
+    YEAR(o.order_date) AS SalesYear,
+    DATEPART(week, o.order_date) AS SalesWeek,
+    p.name AS ProductName,
+    SUM(od.quantity) AS TotalQuantity
+FROM Orders o
+JOIN OrderDetails od ON o.id = od.order_id
+JOIN Products p ON od.product_id = p.id
+GROUP BY YEAR(o.order_date), DATEPART(week, o.order_date), p.name;
+
+GO
+
+-- 10. Produkty zaplanowane do produkcji zamówienia wewnętrzne
 CREATE VIEW COMPANY_PRODUCTION_PLAN_VIEW AS
 SELECT
     co.id AS CompanyOrderID,
@@ -141,7 +140,7 @@ JOIN Products p ON co.product_id = p.id;
 
 GO
 
--- 9. Status wysyłek
+-- 11. Status wysyłek
 CREATE VIEW SHIPMENTS_STATUS_VIEW AS
 SELECT
     s.id AS ShipmentID,
@@ -156,7 +155,7 @@ JOIN Addresses a ON s.address_id = a.id;
 
 GO
 
--- 10. Opinie klientów o produktach
+-- 12. Opinie klientów o produktach
 CREATE VIEW PRODUCT_REVIEWS_VIEW AS
 SELECT
     p.name AS ProductName,
