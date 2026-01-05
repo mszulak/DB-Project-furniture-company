@@ -1,7 +1,7 @@
 USE test_db;
 GO
 
--- 1. Funkcja: Obliczanie całkowitego kosztu produkcji produktu (robocizna + części)
+-- 1. Zlicza koszt robocizny i wszystkich części potrzebnych do stworzenia konkretnego produktu
 CREATE OR ALTER FUNCTION fn_CalculateProductionCost (@ProductId INT)
 RETURNS FLOAT
 AS
@@ -23,7 +23,7 @@ BEGIN
 END;
 GO
 
--- 2. Funkcja: Obliczanie wartości zamówienia (koszt produkcji + marża - rabat)
+-- 2. Wylicza końcową wartość zamówienia: koszt produkcji z narzutem 40%, pomniejszony o rabat
 CREATE OR ALTER FUNCTION fn_CalculateOrderValue (@OrderId INT)
 RETURNS FLOAT
 AS
@@ -40,7 +40,7 @@ BEGIN
 END;
 GO
 
--- 3. Funkcja: Obliczanie sumy wydatków danego klienta
+-- 3. Podlicza łączną kwotę, jaką dany klient wydał na wszystkie swoje zamówienia
 CREATE OR ALTER FUNCTION fn_GetCustomerTotalSpent (@CustomerId INT)
 RETURNS FLOAT
 AS

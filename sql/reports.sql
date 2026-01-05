@@ -1,8 +1,8 @@
 USE test_db;
 GO
 
--- RAPORT 1: Koszty produkcji ujęte miesięcznie i rocznie
--- Realizuje wymaganie: "raporty dotyczące kosztów produkcji... miesięcznie oraz rocznie" [cite: 18]
+-- RAPORT 1: Zestawienie kosztów produkcji z podziałem na lata, miesiące i grupy produktów.
+-- Pozwala sprawdzić, która kategoria generuje największe koszty w danym okresie.
 SELECT
     YEAR(co.order_date) AS Rok,
     MONTH(co.order_date) AS Miesiac,
@@ -16,8 +16,8 @@ GROUP BY YEAR(co.order_date), MONTH(co.order_date), c.category_name
 ORDER BY Rok DESC, Miesiac DESC;
 GO
 
--- RAPORT 2: Bieżące stany magazynowe i plan produkcji
--- Realizuje wymaganie: "raporty dotyczące bieżących stanów... oraz produktów zaplanowanych" [cite: 19]
+-- RAPORT 2: Łączny stan magazynowy (fizyczny + w produkcji).
+-- Pokazuje ile mamy towaru "na półce", a ile właśnie się produkuje, co daje pełny obraz dostępności.
 SELECT
     p.name AS Produkt,
     p.current_stock AS StanNaMagazynie,
@@ -28,8 +28,8 @@ LEFT JOIN CompanyOrders co ON p.id = co.product_id
 GROUP BY p.name, p.current_stock;
 GO
 
--- RAPORT 3: Historia zamówień klienta z rabatami
--- Realizuje wymaganie: "raporty dotyczące poprzednich zamówień... w tym przydzielonych rabatów" [cite: 20]
+-- RAPORT 3: Historia zakupów klientów.
+-- Wyświetla szczegóły zamówień, uwzględniając udzielone rabaty i ostateczną kwotę po obniżce.
 SELECT
     c.first_name + ' ' + c.last_name AS Klient,
     o.order_date AS DataZamowienia,
@@ -45,8 +45,8 @@ JOIN Products p ON od.product_id = p.id
 ORDER BY o.order_date DESC;
 GO
 
--- RAPORT 4: Sprzedaż grup produktów (dla zarządu)
--- Realizuje wymaganie: "raporty dla kadry zarządczej dotyczące sprzedaży grup produktów" [cite: 21]
+-- RAPORT 4: Analiza sprzedaży dla zarządu (tygodniowa).
+-- Grupuje wyniki sprzedaży według kategorii i tygodni, pokazując łączny przychód.
 SELECT
     c.category_name AS Kategoria,
     YEAR(o.order_date) AS Rok,
@@ -60,8 +60,8 @@ JOIN Category c ON p.category_id = c.id
 GROUP BY c.category_name, YEAR(o.order_date), DATEPART(week, o.order_date);
 GO
 
--- RAPORT 5: Plan wytworzenia (Harmonogram)
--- Realizuje wymaganie: "raport dotyczący planu wytworzenia poszczególnych produktów" [cite: 22]
+-- RAPORT 5: Harmonogram produkcji.
+-- Na podstawie pracochłonności produktu wylicza szacowaną datę zakończenia każdego zlecenia.
 SELECT
     co.order_date AS DataZlecenia,
     p.name AS Produkt,

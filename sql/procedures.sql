@@ -1,7 +1,7 @@
 USE test_db;
 GO
 
--- 1. Procedura: Sprawdzanie dostępności towaru, kosztów produkcji i czasu oczekiwania
+-- 1. Sprawdza czy produkt jest dostępny, wylicza cenę i szacuje czas oczekiwania (jeśli trzeba dorobić)
 CREATE OR ALTER PROCEDURE sp_CheckAvailabilityAndCost
     @ProductId INT,
     @Quantity INT
@@ -25,7 +25,7 @@ BEGIN
 END;
 GO
 
--- 2. Procedura: Składanie zamówienia z automatycznym zleceniem produkcji w przypadku braku towaru
+-- 2. Główna procedura zakupowa. Zdejmuje towar z magazynu, a jeśli brakuje – automatycznie zleca produkcję brakujących sztuk
 CREATE OR ALTER PROCEDURE sp_PlaceOrder
     @CustomerId INT,
     @ProductId INT,
@@ -78,7 +78,7 @@ BEGIN
 END;
 GO
 
--- 3. Procedura: Zakończenie produkcji i aktualizacja stanu magazynowego
+-- 3. Zamyka zlecenie produkcyjne i dodaje gotowe produkty do stanu magazynowego
 CREATE OR ALTER PROCEDURE sp_CompleteProduction
     @ProductionOrderId INT
 AS
@@ -105,7 +105,7 @@ BEGIN
 END;
 GO
 
--- 4. Procedura: Rejestracja nowego klienta wraz z adresem
+-- 4. Rejestruje klienta i jego adres w jednym rzucie (transakcja), żeby nie było niespójnych danych
 CREATE OR ALTER PROCEDURE sp_RegisterCustomer
     @FirstName VARCHAR(255),
     @LastName VARCHAR(255),
@@ -137,7 +137,7 @@ BEGIN
 END;
 GO
 
--- 5. Procedura: Dodawanie nowego produktu do katalogu
+-- 5. Dodaje nowy produkt, ale wcześniej sprawdza, czy podana kategoria w ogóle istnieje
 CREATE OR ALTER PROCEDURE sp_AddNewProduct
     @Name VARCHAR(255),
     @CategoryName VARCHAR(255),
@@ -163,7 +163,7 @@ BEGIN
 END;
 GO
 
--- 6. Procedura: Anulowanie zamówienia i zwrot zarezerwowanego towaru na stan magazynowy
+-- 6. Anuluje zamówienie, czyści powiązane tabele i zwraca towar z powrotem na magazyn
 CREATE OR ALTER PROCEDURE sp_CancelOrder
     @OrderId INT,
     @Reason VARCHAR(255)

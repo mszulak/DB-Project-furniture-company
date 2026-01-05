@@ -1,7 +1,7 @@
 USE test_db;
 GO
 
--- 1. Trigger: Walidacja poprawności rabatu (0-100%) oraz dodatniej ilości towaru
+-- 1. Podstawowa higiena danych. Blokuje zapis, jeśli ktoś wpisze bzdury (np. ujemną ilość lub rabat 500%).
 CREATE OR ALTER TRIGGER trg_ValidateOrderDetails
 ON OrderDetails
 AFTER INSERT, UPDATE
@@ -21,7 +21,7 @@ BEGIN
 END;
 GO
 
--- 2. Trigger: Blokada ustawienia ujemnego stanu magazynowego
+-- 2. "Bezpiecznik" logiczny. Jeśli jakakolwiek procedura spróbuje zdjąć więcej towaru niż mamy (robiąc minus), ten trigger cofnie całą operację.
 CREATE OR ALTER TRIGGER trg_PreventNegativeStock
 ON Products
 AFTER UPDATE
@@ -35,7 +35,7 @@ BEGIN
 END;
 GO
 
--- 3. Trigger: Blokada usunięcia kategorii, do której przypisane są produkty
+-- 3. Chroni przed przypadkowym usunięciem kategorii, która jest w użyciu. Jeśli są w niej produkty – usuwanie jest blokowane.
 CREATE OR ALTER TRIGGER trg_ProtectCategoryDeletion
 ON Category
 INSTEAD OF DELETE
@@ -53,7 +53,8 @@ BEGIN
 END;
 GO
 
--- 4. Trigger: Monitorowanie i blokada drastycznych zmian cen robocizny (>100% wzrostu lub spadek do <10%)
+-- 4. Zabezpieczenie przed "literówkami" przy edycji cen (tzw. Fat Finger Check).
+-- Jeśli cena nagle skoczy dwukrotnie lub spadnie prawie do zera, system uzna to za błąd i zablokuje zmianę.
 CREATE OR ALTER TRIGGER trg_SafetyCheckPriceChange
 ON Products
 AFTER UPDATE
