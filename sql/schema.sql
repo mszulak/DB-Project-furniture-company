@@ -1,5 +1,7 @@
 USE test_db;
 
+-- 1. Słowniki i proste encje
+
 CREATE TABLE PartsSupplier (
     id INTEGER PRIMARY KEY,
     supplier_name VARCHAR(255) NOT NULL
@@ -25,9 +27,10 @@ CREATE TABLE Shippers (
 CREATE TABLE Payments (
     id INTEGER PRIMARY KEY,
     transaction_id VARCHAR(255) NOT NULL UNIQUE,
-    payment_date DATETIME DEFAULT GETDATE() 
+    payment_date DATETIME DEFAULT GETDATE()
 );
 
+-- 2. Główne encje produktowe
 
 CREATE TABLE Parts (
     id INTEGER PRIMARY KEY,
@@ -44,6 +47,7 @@ CREATE TABLE Products (
     current_stock INTEGER NOT NULL DEFAULT 0,
     production_time_hours INTEGER NOT NULL DEFAULT 1,
     category_id INTEGER NOT NULL,
+    margin FLOAT NOT NULL DEFAULT 1.4,
     FOREIGN KEY (category_id) REFERENCES Category(id)
 );
 
@@ -62,7 +66,7 @@ CREATE TABLE Addresses (
 CREATE TABLE Orders (
     id INTEGER PRIMARY KEY,
     customer_id INTEGER NOT NULL,
-    order_date DATE NOT NULL DEFAULT GETDATE(), -- Poprawione: GETDATE() zamiast CURRENT_DATE
+    order_date DATE NOT NULL DEFAULT GETDATE(),
     FOREIGN KEY (customer_id) REFERENCES Customers(id)
 );
 
@@ -83,6 +87,7 @@ CREATE TABLE OrderDetails (
     product_id INTEGER NOT NULL,
     order_id INTEGER NOT NULL,
     quantity INTEGER NOT NULL DEFAULT 1,
+    unit_price FLOAT NOT NULL DEFAULT 0,
     discount INTEGER DEFAULT 0,
     UNIQUE (order_id, product_id),
     FOREIGN KEY (product_id) REFERENCES Products(id),

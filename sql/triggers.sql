@@ -1,7 +1,7 @@
 USE test_db;
 GO
 
--- 1. Podstawowa higiena danych. Blokuje zapis, jeśli ktoś wpisze bzdury (np. ujemną ilość lub rabat 500%).
+-- 1. Podstawowa higiena danych. Blokuje zapis, jeśli ktoś wpisze bzdury (np. ujemną ilość lub rabat > 100%).
 CREATE OR ALTER TRIGGER trg_ValidateOrderDetails
 ON OrderDetails
 AFTER INSERT, UPDATE
@@ -21,7 +21,26 @@ BEGIN
 END;
 GO
 
--- 2. "Bezpiecznik" logiczny. Jeśli jakakolwiek procedura spróbuje zdjąć więcej towaru niż mamy (robiąc minus), ten trigger cofnie całą operację.
+-- 2. Jeśli dodajesz produkt do zamówienia, ten trigger oblicza jego aktualną cenę
+-- (koszt + marża) i zapisuje w tabeli. Dzięki temu późniejsze zmiany cennika nie psują starych zamówień.
+CREATE OR ALTER TRIGGER trg_SetOrderDetailsPrice
+ON OrderDetails
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Aktualizujemy tylko te wiersze, które właśnie weszły (inserted)
+    -- i które mają cenę równą 0 (czyli system ma ją wyliczyć automatycznie).
+    UPDATE od
+    SET od.unit_price = dbo.fn_CalculateCurrentProductPrice(i.product_id)
+    FROM OrderDetails od
+    INNER JOIN inserted i ON od.id = i.id
+    WHERE od.unit_price = 0;
+END;
+GO
+
+-- 3. "Bezpiecznik" logiczny. Jeśli jakakolwiek procedura spróbuje zdjąć więcej towaru niż mamy (robiąc minus), ten trigger cofnie całą operację.
 CREATE OR ALTER TRIGGER trg_PreventNegativeStock
 ON Products
 AFTER UPDATE
@@ -35,7 +54,7 @@ BEGIN
 END;
 GO
 
--- 3. Chroni przed przypadkowym usunięciem kategorii, która jest w użyciu. Jeśli są w niej produkty – usuwanie jest blokowane.
+-- 4. Chroni przed przypadkowym usunięciem kategorii, która jest w użyciu. Jeśli są w niej produkty – usuwanie jest blokowane.
 CREATE OR ALTER TRIGGER trg_ProtectCategoryDeletion
 ON Category
 INSTEAD OF DELETE
@@ -53,7 +72,7 @@ BEGIN
 END;
 GO
 
--- 4. Zabezpieczenie przed "literówkami" przy edycji cen (tzw. Fat Finger Check).
+-- 5. Zabezpieczenie przed "literówkami" przy edycji cen (Fat Finger Check).
 -- Jeśli cena nagle skoczy dwukrotnie lub spadnie prawie do zera, system uzna to za błąd i zablokuje zmianę.
 CREATE OR ALTER TRIGGER trg_SafetyCheckPriceChange
 ON Products

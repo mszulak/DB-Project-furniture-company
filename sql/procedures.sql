@@ -34,29 +34,46 @@ CREATE OR ALTER PROCEDURE sp_PlaceOrder
 AS
 BEGIN
     SET NOCOUNT ON;
+    -- LIMIT MOCY PRZEROBOWYCH FABRYKI (160 roboczogodzin na dzień)
+    DECLARE @DailyCapacityLimit INT = 160;
+
     BEGIN TRY
         BEGIN TRANSACTION;
 
         DECLARE @CurrentStock INT;
-        DECLARE @ProductionTime INT;
+        DECLARE @ProductionTimePerUnit INT;
         DECLARE @MissingQuantity INT;
         DECLARE @OrderId INT;
         DECLARE @ProductionId INT;
+        DECLARE @CurrentLoad INT;
+        DECLARE @NewOrderLoad INT;
 
-        SELECT @CurrentStock = current_stock, @ProductionTime = production_time_hours
+        SELECT @CurrentStock = current_stock,
+               @ProductionTimePerUnit = production_time_hours
         FROM Products WHERE id = @ProductId;
 
-        SELECT @OrderId = ISNULL(MAX(id), 0) + 1 FROM Orders;
-        INSERT INTO Orders (id, customer_id, order_date) VALUES (@OrderId, @CustomerId, GETDATE());
-
+        -- 1. Logika Magazyn vs Produkcja
         IF @CurrentStock >= @Quantity
         BEGIN
+            -- Jest na stanie: tylko rezerwujemy
             UPDATE Products SET current_stock = current_stock - @Quantity WHERE id = @ProductId;
         END
         ELSE
         BEGIN
+            -- Brak na stanie: trzeba wyprodukować
             SET @MissingQuantity = @Quantity - @CurrentStock;
 
+            -- WYLICZENIE MOCY PRZEROBOWYCH
+            SET @NewOrderLoad = @MissingQuantity * @ProductionTimePerUnit;
+            SET @CurrentLoad = dbo.fn_GetDailyProductionLoad(CAST(GETDATE() AS DATE));
+
+            IF (@CurrentLoad + @NewOrderLoad) > @DailyCapacityLimit
+            BEGIN
+                -- Odrzucamy zamówienie, jeśli fabryka jest przepełniona
+                THROW 51000, 'Przekroczono dzienne moce przerobowe fabryki! Spróbuj złożyć zamówienie na inny termin lub mniejszą ilość.', 1;
+            END
+
+            -- Jeśli jest ok, zerujemy stan i zlecamy produkcję
             UPDATE Products SET current_stock = 0 WHERE id = @ProductId;
 
             SELECT @ProductionId = ISNULL(MAX(id), 0) + 1 FROM CompanyOrders;
@@ -65,6 +82,10 @@ BEGIN
 
             PRINT 'Zlecono produkcję brakującej ilości: ' + CAST(@MissingQuantity AS VARCHAR);
         END
+
+        -- 2. Tworzenie zamówienia (jeśli przeszło walidację mocy)
+        SELECT @OrderId = ISNULL(MAX(id), 0) + 1 FROM Orders;
+        INSERT INTO Orders (id, customer_id, order_date) VALUES (@OrderId, @CustomerId, GETDATE());
 
         INSERT INTO OrderDetails (id, product_id, order_id, quantity, discount)
         VALUES (ISNULL((SELECT MAX(id) FROM OrderDetails),0)+1, @ProductId, @OrderId, @Quantity, @Discount);
