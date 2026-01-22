@@ -172,7 +172,7 @@ BEGIN
 END;
 GO
 
--- 3. ZMODYFIKOWANA: Wylicza końcową wartość zamówienia na podstawie zapisanych cen
+-- 3. Wylicza końcową wartość zamówienia na podstawie zapisanych cen
 CREATE OR ALTER FUNCTION fn_CalculateOrderValue (@OrderId INT)
 RETURNS FLOAT
 AS
@@ -204,8 +204,6 @@ BEGIN
 END;
 GO
 
--USE test_db;
-GO
 
 -- 5. Sprawdza, ile godzin pracy jest już zaplanowanych na dany dzień
 CREATE OR ALTER FUNCTION fn_GetDailyProductionLoad (@Date DATE)
@@ -220,6 +218,125 @@ BEGIN
     WHERE co.order_date = @Date;
 
     RETURN ISNULL(@TotalHours, 0);
+END;
+GO
+
+-- 6. Oblicza średnią ocenę produktu na podstawie opinii (Reviews)
+-- Przydatne do wyświetlania "gwiazdek" przy produkcie w sklepie/katalogu.
+CREATE OR ALTER FUNCTION fn_GetProductAverageRating (@ProductId INT)
+RETURNS DECIMAL(3, 2)
+AS
+BEGIN
+    DECLARE @AvgRating DECIMAL(3, 2);
+
+    SELECT @AvgRating = AVG(CAST(rating AS DECIMAL(3, 2)))
+    FROM Reviews
+    WHERE product_id = @ProductId;
+
+    -- Jeśli brak opinii, zwracamy 0.00
+    RETURN ISNULL(@AvgRating, 0.00);
+END;
+GO
+
+-- 7. Sprawdza, czy całe zamówienie jest gotowe do wysyłki (Logistyka)
+-- Zwraca 1 (Prawda), jeśli wszystkie produkty z zamówienia są w magazynie w wystarczającej ilości.
+-- Zwraca 0 (Fałsz), jeśli brakuje choć jednego elementu.
+CREATE OR ALTER FUNCTION fn_CheckOrderShippability (@OrderId INT)
+RETURNS BIT
+AS
+BEGIN
+    DECLARE @IsReady BIT = 1;
+
+    -- Jeśli istnieje jakakolwiek pozycja w zamówieniu, której ilość przekracza stan magazynowy
+    IF EXISTS (
+        SELECT 1
+        FROM OrderDetails od
+        JOIN Products p ON od.product_id = p.id
+        WHERE od.order_id = @OrderId
+          AND od.quantity > p.current_stock
+    )
+    BEGIN
+        SET @IsReady = 0;
+    END
+
+    RETURN @IsReady;
+END;
+GO
+
+-- 8. Oblicza, na ile dni wystarczy zapasu magazynowego
+-- Analizuje średnią sprzedaż z ostatnich 30 dni i dzieli przez to obecny stan magazynu.
+-- Wynik '9999' oznacza, że produkt się nie sprzedaje (zapas wystarczy na zawsze).
+CREATE OR ALTER FUNCTION fn_EstimateStockCoverageDays (@ProductId INT)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @CurrentStock INT;
+    DECLARE @SoldLast30Days INT;
+    DECLARE @DailySalesAvg FLOAT;
+    DECLARE @DaysLeft INT;
+
+    SELECT @CurrentStock = current_stock 
+    FROM Products 
+    WHERE id = @ProductId;
+
+    SELECT @SoldLast30Days = SUM(od.quantity)
+    FROM OrderDetails od
+    JOIN Orders o ON od.order_id = o.id
+    WHERE od.product_id = @ProductId
+      AND o.order_date >= DATEADD(DAY, -30, GETDATE());
+
+    SET @SoldLast30Days = ISNULL(@SoldLast30Days, 0);
+
+    IF @SoldLast30Days = 0
+    BEGIN
+        SET @DaysLeft = 9999;
+    END
+    ELSE
+    BEGIN
+        SET @DailySalesAvg = @SoldLast30Days / 30.0;
+        
+        SET @DaysLeft = CAST(@CurrentStock / @DailySalesAvg AS INT);
+    END
+
+    RETURN @DaysLeft;
+END;
+GO
+
+-- 9. Sprawdza, ile sztuk danego produktu jest aktualnie "w produkcji"
+-- Pomaga handlowcom ocenić, czy niski stan magazynowy zaraz się uzupełni.
+CREATE OR ALTER FUNCTION fn_GetPendingProductionQuantity (@ProductId INT)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @PendingQty INT;
+
+    SELECT @PendingQty = SUM(quantity)
+    FROM CompanyOrders
+    WHERE product_id = @ProductId;
+
+    RETURN ISNULL(@PendingQty, 0);
+END;
+GO
+
+-- 10. Liczy dni od ostatniego zamówienia klienta 
+-- Pozwala wyłapać klientów, którzy dawno nic nie kupili (np. > 90 dni) i wysłać im maila.
+CREATE OR ALTER FUNCTION fn_GetDaysSinceLastCustomerOrder (@CustomerId INT)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @LastDate DATE;
+    DECLARE @DaysDiff INT;
+
+    SELECT @LastDate = MAX(order_date)
+    FROM Orders
+    WHERE customer_id = @CustomerId;
+
+    IF @LastDate IS NULL
+        RETURN NULL; 
+
+    SET @DaysDiff = DATEDIFF(DAY, @LastDate, GETDATE());
+
+    RETURN @DaysDiff;
 END;
 GO
 
